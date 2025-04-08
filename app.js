@@ -3,8 +3,8 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
-var mongoose = require('mongoose')
-var {CreateErrorRes} = require('./utils/ResHandler')
+var mongoose = require('mongoose');
+var { CreateErrorRes } = require('./utils/ResHandler');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -21,31 +21,48 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Sử dụng usersRouter cho các routes liên quan đến người dùng
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
+app.use('/activity', require('./routes/activity'));
+app.use('/bank', require('./routes/bank'));
+app.use('/bookings', require('./routes/bookings'));
+app.use('/city', require('./routes/city'));
+app.use('/descriptionfile', require('./routes/descriptionfile'));
+app.use('/destinationimages', require('./routes/destinationimages'));
+app.use('/destinations', require('./routes/destinations'));
+app.use('/itinerary', require('./routes/itinerary'));
+app.use('/paymentdetails', require('./routes/paymentdetails'));
+app.use('/paymentmethods', require('./routes/paymentmethods'));
+app.use('/province', require('./routes/province'));
+app.use('/qrcode', require('./routes/qrcode'));
+app.use('/reviews', require('./routes/reviews'));
 app.use('/roles', require('./routes/roles'));
-app.use('/auth', require('./routes/auth'));
-app.use('/products', require('./routes/products'));
-app.use('/categories', require('./routes/categories'));
-//
-mongoose.connect('mongodb://localhost:27017/C5');
-mongoose.connection.on('connected',function(){
-  console.log("connected");
-})
+app.use('/ticketprices', require('./routes/ticketprices'));
+app.use('/wishlist', require('./routes/wishlist'));
 
-// catch 404 and forward to error handler
-app.use(function(req, res, next) {
-  next(createError(404));
+// Kết nối MongoDB
+mongoose.connect('mongodb://localhost:27017/TourBookingDB', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+}).then(() => {
+    console.log("Connected to MongoDB");
+}).catch(err => {
+    console.log("MongoDB connection error:", err);
 });
 
-// error handler
-app.use(function(err, req, res, next) {
-  // set locals, only providing error in development
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
+// Catch 404 and forward to error handler
+app.use(function (req, res, next) {
+    next(createError(404));
+});
 
-  // render the error page
-  CreateErrorRes(res,err.status||500,err)
+// Error handler
+app.use(function (err, req, res, next) {
+    res.locals.message = err.message;
+    res.locals.error = req.app.get('env') === 'development' ? err : {};
+
+    // Xử lý lỗi chung và trả về kết quả qua CreateErrorRes
+    CreateErrorRes(res, err.status || 500, err);
 });
 
 module.exports = app;

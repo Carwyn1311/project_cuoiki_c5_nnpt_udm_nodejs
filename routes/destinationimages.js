@@ -1,12 +1,12 @@
-// routes/role.js
+// routes/destinationImages.js
 const express = require('express');
 const router = express.Router();
-const controller = require('../controllers/role');
+const controller = require('../controllers/destinationImages');
 
-// CRUD
+// CRUD operations for destination images
+router.post('/', controller.create);
 router.get('/', controller.getAll);
 router.get('/:id', controller.getById);
-router.post('/', controller.create);
 router.put('/:id', controller.update);
 router.delete('/:id', controller.remove);
 

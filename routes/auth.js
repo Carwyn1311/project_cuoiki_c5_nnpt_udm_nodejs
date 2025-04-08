@@ -1,64 +1,64 @@
 var express = require('express');
 var router = express.Router();
-let userController = require('../controllers/users')
-var { CreateSuccessRes, CreateErrorRes } = require('../utils/ResHandler')
-let jwt = require('jsonwebtoken')
-let constants = require('../utils/constants')
-let { check_authentication } = require('../utils/check_auth')
-let bcrypt = require('bcrypt')
-let { validate, validationSiginUp } = require('../utils/validator')
-let crypto = require('crypto')
-let mailer = require('../utils/mailer')
+let userController = require('../controllers/users');
+var { CreateSuccessRes, CreateErrorRes } = require('../utils/ResHandler');
+let jwt = require('jsonwebtoken');
+let constants = require('../utils/constants');
+let { check_authentication } = require('../utils/check_auth');
+let bcrypt = require('bcrypt');
+let { validate, validationSiginUp } = require('../utils/validator');
+let crypto = require('crypto');
+let mailer = require('../utils/mailer');
 
-/* GET users listing. */
+// Login route
 router.post('/login', async function (req, res, next) {
     try {
-        let body = req.body;
-        let username = body.username;
-        let password = body.password
+        let { username, password } = req.body;
         let result = await userController.Login(username, password);
         let token = jwt.sign({
             id: result._id,
             expire: new Date(Date.now() + 24 * 3600 * 1000)
-        }, constants.SECRET_KEY)
+        }, constants.SECRET_KEY);
         CreateSuccessRes(res, 200, token);
     } catch (error) {
-        next(error)
+        next(error);
     }
 });
+
+// Signup route
 router.post('/signup', validationSiginUp, validate, async function (req, res, next) {
     try {
-        let body = req.body;
-        let username = body.username;
-        let password = body.password;
-        let email = body.email
-        let result = await userController.CreateAnUser(
-            username, password, email, 'user');
+        let { username, password, email } = req.body;
+        let result = await userController.CreateAnUser(username, password, email, 'user');
         let token = jwt.sign({
             id: result._id,
             expire: new Date(Date.now() + 24 * 3600 * 1000)
-        }, constants.SECRET_KEY)
+        }, constants.SECRET_KEY);
         CreateSuccessRes(res, 200, token);
     } catch (error) {
-        next(error)
+        next(error);
     }
 });
+
+// Get current user
 router.get("/me", check_authentication, async function (req, res, next) {
     CreateSuccessRes(res, 200, req.user);
-})
+});
+
+// Change password
 router.post('/changepassword', check_authentication, async function (req, res, next) {
-    let body = req.body;
-    let oldpassword = body.oldpassword;
-    let newpassword = body.newpassword;
+    let { oldpassword, newpassword } = req.body;
     if (bcrypt.compareSync(oldpassword, req.user.password)) {
         let user = req.user;
         user.password = newpassword;
         await user.save();
         CreateSuccessRes(res, 200, user);
     } else {
-        next(new Error("oldpassword khong dung"))
+        next(new Error("Old password is incorrect"));
     }
-})
+});
+
+// Forgot password
 router.post('/forgotpassword', async function (req, res, next) {
     try {
         let email = req.body.email;
@@ -67,20 +67,18 @@ router.post('/forgotpassword', async function (req, res, next) {
             user.tokenResetPassword = crypto.randomBytes(24).toString('hex');
             user.tokenResetPasswordExp = (new Date(Date.now() + 10 * 60 * 1000)).getTime();
             await user.save();
-            let URLReset = `http://localhost:3000/auth/resetpassword/${user.tokenResetPassword}`
-            await mailer.sendmailFrogetPass(user.email, URLReset)
-            CreateSuccessRes(res, 200, {
-                url: URLReset
-            })
+            let URLReset = `http://localhost:3000/auth/resetpassword/${user.tokenResetPassword}`;
+            await mailer.sendmailFrogetPass(user.email, URLReset);
+            CreateSuccessRes(res, 200, { url: URLReset });
         } else {
-            throw new Error("email khong ton tai")
+            throw new Error("Email not found");
         }
     } catch (error) {
-        next(error)
+        next(error);
     }
-})
+});
 
-
+// Reset password
 router.post('/resetpassword/:token', async function (req, res, next) {
     try {
         let token = req.params.token;
@@ -92,17 +90,16 @@ router.post('/resetpassword/:token', async function (req, res, next) {
                 user.tokenResetPassword = null;
                 user.tokenResetPasswordExp = null;
                 await user.save();
-                CreateSuccessRes(res, 200, user)
+                CreateSuccessRes(res, 200, user);
             } else {
-                throw new Error("token het han")
+                throw new Error("Token expired");
             }
         } else {
-            throw new Error("email khong ton tai")
+            throw new Error("Email not found");
         }
     } catch (error) {
-        next(error)
+        next(error);
     }
-})
-
+});
 
 module.exports = router;

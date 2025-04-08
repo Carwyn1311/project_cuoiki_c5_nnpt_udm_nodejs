@@ -1,12 +1,12 @@
-// routes/role.js
+// routes/paymentmethods.js
 const express = require('express');
 const router = express.Router();
-const controller = require('../controllers/role');
+const controller = require('../controllers/paymentmethods');
 
-// CRUD
+// CRUD operations for PaymentMethods
+router.post('/', controller.create);
 router.get('/', controller.getAll);
 router.get('/:id', controller.getById);
-router.post('/', controller.create);
 router.put('/:id', controller.update);
 router.delete('/:id', controller.remove);
 
