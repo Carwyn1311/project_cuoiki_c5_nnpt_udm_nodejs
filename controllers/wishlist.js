@@ -1,50 +1,74 @@
-// controllers/wishlist.js
-const Wishlist = require('../schemas/wishlist');
+const Wishlist = require('../schemas/Wishlist'); // Mẫu schema cho Wishlist
 
+// Tạo Wishlist mới
 exports.create = async (req, res) => {
   try {
-    const { user, destination } = req.body;
-    const newWishlist = new Wishlist({ user, destination });
-    await newWishlist.save();
-    res.status(201).json({ success: true, data: newWishlist });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    const { destinationId } = req.body;
+    const token = req.headers.authorization.split(" ")[1];  // Lấy token từ header
+    const decoded = jwt.verify(token, constants.SECRET_KEY);  // Giải mã token để lấy thông tin user
+    const username = decoded.id;
+
+    // Tạo đối tượng Wishlist từ dữ liệu nhận được
+    const newWishlist = new Wishlist({
+      user: username,
+      destination: destinationId,
+    });
+
+    // Lưu wishlist vào cơ sở dữ liệu
+    const savedWishlist = await newWishlist.save();
+    res.status(200).json({ success: true, data: savedWishlist });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
+// Lấy tất cả Wishlist của người dùng
 exports.getAll = async (req, res) => {
   try {
-    const wishlists = await Wishlist.find().populate('user').populate('destination');
+    const token = req.headers.authorization.split(" ")[1];  // Lấy token từ header
+    const decoded = jwt.verify(token, constants.SECRET_KEY);  // Giải mã token để lấy thông tin user
+    const username = decoded.id;
+
+    // Tìm tất cả Wishlist của người dùng
+    const wishlists = await Wishlist.find({ user: username }).populate('destination');
     res.status(200).json({ success: true, data: wishlists });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-exports.getById = async (req, res) => {
+// Kiểm tra Wishlist theo ID
+exports.checkWish = async (req, res) => {
   try {
-    const wishlist = await Wishlist.findById(req.params.id).populate('user').populate('destination');
-    if (!wishlist) return res.status(404).json({ success: false, message: 'Wishlist not found' });
-    res.status(200).json({ success: true, data: wishlist });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    const { id } = req.params;
+    const token = req.headers.authorization.split(" ")[1];  // Lấy token từ header
+    const decoded = jwt.verify(token, constants.SECRET_KEY);  // Giải mã token để lấy thông tin user
+    const username = decoded.id;
+
+    // Kiểm tra xem item này có trong Wishlist của người dùng không
+    const isLiked = await Wishlist.exists({ user: username, destination: id });
+    res.status(200).json({ liked: isLiked });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-exports.update = async (req, res) => {
+// Xóa Wishlist theo destinationId
+exports.deleteWish = async (req, res) => {
   try {
-    const updatedWishlist = await Wishlist.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.status(200).json({ success: true, data: updatedWishlist });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
+    const { destinationId } = req.params;
+    const token = req.headers.authorization.split(" ")[1];  // Lấy token từ header
+    const decoded = jwt.verify(token, constants.SECRET_KEY);  // Giải mã token để lấy thông tin user
+    const username = decoded.id;
 
-exports.remove = async (req, res) => {
-  try {
-    await Wishlist.findByIdAndDelete(req.params.id);
-    res.status(200).json({ success: true, message: 'Wishlist deleted successfully' });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    // Xóa Wishlist nếu có trong cơ sở dữ liệu
+    const result = await Wishlist.deleteOne({ user: username, destination: destinationId });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ success: false, message: "Wishlist item not found" });
+    }
+
+    res.status(200).json({ success: true, message: "Wishlist item deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };

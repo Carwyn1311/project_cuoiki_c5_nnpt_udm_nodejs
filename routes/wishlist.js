@@ -1,13 +1,19 @@
-// routes/wishlist.js
 const express = require('express');
 const router = express.Router();
-const controller = require('../controllers/wishlist');
+const wishlistController = require('../controllers/wishlist');
 
 // CRUD operations for Wishlist
-router.post('/', controller.create); // Tạo Wishlist mới
-router.get('/', controller.getAll); // Lấy tất cả Wishlist
-router.get('/:id', controller.getById); // Lấy Wishlist theo ID
-router.put('/:id', controller.update); // Cập nhật Wishlist theo ID
-router.delete('/:id', controller.remove); // Xóa Wishlist theo ID
+
+// Tạo Wishlist mới
+router.post('/', wishlistController.create);
+
+// Lấy tất cả Wishlist của người dùng
+router.get('/', wishlistController.getAll);
+
+// Kiểm tra Wishlist theo ID
+router.get('/check/:id', wishlistController.checkWish);
+
+// Xóa Wishlist theo destinationId
+router.delete('/delete/:destinationId', wishlistController.deleteWish);
 
 module.exports = router;

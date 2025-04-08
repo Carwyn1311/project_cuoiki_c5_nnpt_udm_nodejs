@@ -1,58 +1,67 @@
-const PaymentDetails = require('../schemas/paymentdetails');
+const PaymentDetails = require('../schemas/PaymentDetails');
+const jwt = require('jsonwebtoken');
+const constants = require('../utils/constants');
 
+// Tạo PaymentDetails mới
 exports.create = async (req, res) => {
   try {
-    const { amount, payment_date, status, invoiceCode, payment_mth, user, booking } = req.body;
-    const newPaymentDetail = new PaymentDetails({
-      amount, payment_date, status, invoiceCode, payment_mth, user, booking
+    const { paymentMethodId, bookingId } = req.body;
+    const token = req.headers.authorization.split(" ")[1];  // Lấy token từ header
+    const decoded = jwt.verify(token, constants.SECRET_KEY);  // Giải mã token để lấy thông tin user
+    const username = decoded.id;
+
+    const paymentDetails = new PaymentDetails({
+      paymentMethodId,
+      bookingId,
+      status: "pending",  // Giả sử mặc định status là "pending"
+      user: username,
     });
-    await newPaymentDetail.save();
-    res.status(201).json({ success: true, data: newPaymentDetail });
+
+    const savedPayment = await paymentDetails.save();
+    res.status(201).json({ success: true, data: savedPayment });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
-exports.getAll = async (req, res) => {
+// Cập nhật trạng thái PaymentDetails
+exports.updatePaymentDetailStatus = async (req, res) => {
   try {
-    const paymentDetails = await PaymentDetails.find()
-      .populate('payment_mth')
-      .populate('user')
-      .populate('qrCodes')
-      .populate('booking');
-    res.status(200).json({ success: true, data: paymentDetails });
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const updatedPayment = await PaymentDetails.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true }
+    );
+
+    if (!updatedPayment) {
+      return res.status(404).json({ success: false, message: 'PaymentDetail not found' });
+    }
+
+    res.status(200).json({ success: true, data: updatedPayment });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
+// Lấy PaymentDetails theo ID
 exports.getById = async (req, res) => {
   try {
-    const paymentDetail = await PaymentDetails.findById(req.params.id)
-      .populate('payment_mth')
-      .populate('user')
-      .populate('qrCodes')
-      .populate('booking');
-    if (!paymentDetail) return res.status(404).json({ success: false, message: 'PaymentDetail not found' });
-    res.status(200).json({ success: true, data: paymentDetail });
+    const payment = await PaymentDetails.findById(req.params.id);
+    if (!payment) return res.status(404).json({ success: false, message: 'Payment not found' });
+    res.status(200).json({ success: true, data: payment });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
-exports.update = async (req, res) => {
+// Lấy tất cả PaymentDetails
+exports.getAll = async (req, res) => {
   try {
-    const updatedPaymentDetail = await PaymentDetails.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.status(200).json({ success: true, data: updatedPaymentDetail });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-exports.remove = async (req, res) => {
-  try {
-    await PaymentDetails.findByIdAndDelete(req.params.id);
-    res.status(200).json({ success: true, message: 'PaymentDetail deleted successfully' });
+    const payments = await PaymentDetails.find().populate('paymentMethod').populate('booking');
+    res.status(200).json({ success: true, data: payments });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

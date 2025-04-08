@@ -1,13 +1,12 @@
-// routes/paymentdetails.js
 const express = require('express');
 const router = express.Router();
 const controller = require('../controllers/paymentdetails');
 
 // CRUD operations for PaymentDetails
-router.post('/', controller.create);
-router.get('/', controller.getAll);
-router.get('/:id', controller.getById);
-router.put('/:id', controller.update);
-router.delete('/:id', controller.remove);
+router.post('/', controller.create); // Tạo PaymentDetails mới
+router.get('/', controller.getAll); // Lấy tất cả PaymentDetails
+router.get('/:id', controller.getById); // Lấy PaymentDetails theo ID
+router.put('/:id/status', controller.updatePaymentDetailStatus); // Cập nhật trạng thái PaymentDetails
+router.delete('/:id', controller.remove); // Xóa PaymentDetails theo ID
 
 module.exports = router;

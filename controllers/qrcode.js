@@ -1,50 +1,36 @@
-// controllers/qrcode.js
-const QRCode = require('../schemas/qrcode');
+const QRCode = require('../schemas/QRCode'); // Giả sử bạn đã tạo schema QRCode
 
+// Tạo mới QRCode
 exports.create = async (req, res) => {
   try {
-    const { qr_code_url, bank, paymentDetails } = req.body;
-    const newQRCode = new QRCode({ qr_code_url, bank, paymentDetails });
+    const { paymentId, bankId } = req.body;
+
+    // Logic tạo mã QR trực tiếp trong controller (thay vì gọi service)
+    const qrCodeUrl = `https://some-qrcode-generator.com/create?paymentId=${paymentId}&bankId=${bankId}`; // Tạo URL QR (Giả sử là một link tạo QR)
+
+    // Lưu vào cơ sở dữ liệu nếu cần
+    const newQRCode = new QRCode({
+      paymentId,
+      bankId,
+      qrCodeUrl
+    });
     await newQRCode.save();
-    res.status(201).json({ success: true, data: newQRCode });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+
+    return res.status(200).json({ success: true, qrCodeUrl });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: `Error creating QR code: ${error.message}` });
   }
 };
 
-exports.getAll = async (req, res) => {
-  try {
-    const qrCodes = await QRCode.find().populate('bank').populate('paymentDetails');
-    res.status(200).json({ success: true, data: qrCodes });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
-
+// Lấy QRCode theo ID
 exports.getById = async (req, res) => {
   try {
-    const qrCode = await QRCode.findById(req.params.id).populate('bank').populate('paymentDetails');
-    if (!qrCode) return res.status(404).json({ success: false, message: 'QRCode not found' });
-    res.status(200).json({ success: true, data: qrCode });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-exports.update = async (req, res) => {
-  try {
-    const updatedQRCode = await QRCode.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.status(200).json({ success: true, data: updatedQRCode });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-exports.remove = async (req, res) => {
-  try {
-    await QRCode.findByIdAndDelete(req.params.id);
-    res.status(200).json({ success: true, message: 'QRCode deleted successfully' });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    const qrCode = await QRCode.findById(req.params.id); // Giả sử bạn đang sử dụng MongoDB
+    if (!qrCode) {
+      return res.status(404).json({ success: false, message: 'QR code not found' });
+    }
+    return res.status(200).json({ success: true, data: qrCode });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
   }
 };

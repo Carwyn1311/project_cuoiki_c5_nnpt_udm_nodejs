@@ -1,23 +1,28 @@
-// controllers/activity.js
-const Activity = require('../schemas/activity'); // Đường dẫn đúng khi sử dụng thư mục schemas
+const Activity = require('../schemas/activity'); 
 
 exports.create = async (req, res) => {
   try {
     const { activity_name, start_time, end_time, itinerary } = req.body;
+    
+    // Kiểm tra dữ liệu đầu vào
+    if (!activity_name || !start_time || !end_time || !itinerary) {
+      return res.status(400).json({ success: false, message: 'Missing required fields' });
+    }
+
     const newActivity = new Activity({ activity_name, start_time, end_time, itinerary });
     await newActivity.save();
     res.status(201).json({ success: true, data: newActivity });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({ success: false, message: 'Error saving activity: ' + err.message });
   }
 };
 
 exports.getAll = async (req, res) => {
   try {
-    const activities = await Activity.find().populate('itinerary'); // Populating the itinerary field
+    const activities = await Activity.find().populate('itinerary');
     res.status(200).json({ success: true, data: activities });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({ success: false, message: 'Error fetching activities: ' + err.message });
   }
 };
 
@@ -27,24 +32,34 @@ exports.getById = async (req, res) => {
     if (!activity) return res.status(404).json({ success: false, message: 'Activity not found' });
     res.status(200).json({ success: true, data: activity });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({ success: false, message: 'Error fetching activity: ' + err.message });
   }
 };
 
 exports.update = async (req, res) => {
   try {
+    const { activity_name, start_time, end_time, itinerary } = req.body;
+    if (!activity_name || !start_time || !end_time || !itinerary) {
+      return res.status(400).json({ success: false, message: 'Missing required fields' });
+    }
+
     const updatedActivity = await Activity.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!updatedActivity) {
+      return res.status(404).json({ success: false, message: 'Activity not found' });
+    }
+
     res.status(200).json({ success: true, data: updatedActivity });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({ success: false, message: 'Error updating activity: ' + err.message });
   }
 };
 
 exports.remove = async (req, res) => {
   try {
-    await Activity.findByIdAndDelete(req.params.id);
+    const activity = await Activity.findByIdAndDelete(req.params.id);
+    if (!activity) return res.status(404).json({ success: false, message: 'Activity not found' });
     res.status(200).json({ success: true, message: 'Activity deleted successfully' });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({ success: false, message: 'Error deleting activity: ' + err.message });
   }
 };

@@ -1,51 +1,61 @@
-// controllers/city.js
-const City = require('../schemas/city');
+const City = require('../schemas/City');
 
+// Tạo mới city
 exports.create = async (req, res) => {
   try {
     const { name, province } = req.body;
-    const newCity = new City({ name, province });
-    await newCity.save();
-    res.status(201).json({ success: true, data: newCity });
+
+    // Tạo đối tượng City từ dữ liệu yêu cầu
+    const newCity = new City({
+      name,
+      province,
+    });
+
+    const savedCity = await newCity.save();
+    res.status(201).json({ success: true, data: savedCity });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
-exports.getAll = async (req, res) => {
+// Cập nhật city theo ID
+exports.update = async (req, res) => {
   try {
-    const cities = await City.find().populate('province').populate('destinations'); // Populating related fields
-    res.status(200).json({ success: true, data: cities });
+    const { name, province } = req.body;
+
+    // Cập nhật city theo ID
+    const updatedCity = await City.findByIdAndUpdate(req.params.id, {
+      name,
+      province,
+    }, { new: true });
+
+    if (!updatedCity) {
+      return res.status(404).json({ success: false, message: 'City not found' });
+    }
+
+    res.status(200).json({ success: true, message: 'City updated successfully', data: updatedCity });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
+// Lấy thông tin city theo ID
 exports.getById = async (req, res) => {
   try {
-    const city = await City.findById(req.params.id)
-      .populate('province')
-      .populate('destinations');
+    const city = await City.findById(req.params.id);
     if (!city) return res.status(404).json({ success: false, message: 'City not found' });
+
     res.status(200).json({ success: true, data: city });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
-exports.update = async (req, res) => {
+// Lấy tất cả cities
+exports.getAll = async (req, res) => {
   try {
-    const updatedCity = await City.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.status(200).json({ success: true, data: updatedCity });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-exports.remove = async (req, res) => {
-  try {
-    await City.findByIdAndDelete(req.params.id);
-    res.status(200).json({ success: true, message: 'City deleted successfully' });
+    const cities = await City.find();
+    res.status(200).json({ success: true, data: cities });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
