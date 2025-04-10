@@ -28,4 +28,4 @@ const ticketPricesSchema = new Schema(
 );
 
 // Export model TicketPrices
-module.exports = mongoose.model('TicketPrices', ticketPricesSchema);
+module.exports = mongoose.models.TicketPrices || mongoose.model('TicketPrices', ticketPricesSchema)

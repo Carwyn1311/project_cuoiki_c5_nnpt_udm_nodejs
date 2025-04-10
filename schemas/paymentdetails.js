@@ -55,4 +55,4 @@ const paymentDetailsSchema = new Schema(
 );
 
 // Export model PaymentDetails
-module.exports = mongoose.model('PaymentDetails', paymentDetailsSchema);
+module.exports = mongoose.models.PaymentDetails || mongoose.model('PaymentDetails', paymentDetailsSchema);

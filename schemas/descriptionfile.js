@@ -24,4 +24,4 @@ const descriptionFileSchema = new Schema(
 );
 
 // Export model DescriptionFile
-module.exports = mongoose.model('DescriptionFile', descriptionFileSchema);
+module.exports = mongoose.models.DescriptionFile || mongoose.model('DescriptionFile', descriptionFileSchema);

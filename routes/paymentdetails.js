@@ -1,12 +1,20 @@
 const express = require('express');
 const router = express.Router();
-const controller = require('../controllers/paymentdetails');
+const paymentDetailsController = require('../controllers/paymentdetails');
 
-// CRUD operations for PaymentDetails
-router.post('/', controller.create); // Tạo PaymentDetails mới
-router.get('/', controller.getAll); // Lấy tất cả PaymentDetails
-router.get('/:id', controller.getById); // Lấy PaymentDetails theo ID
-router.put('/:id/status', controller.updatePaymentDetailStatus); // Cập nhật trạng thái PaymentDetails
-router.delete('/:id', controller.remove); // Xóa PaymentDetails theo ID
+// GET all payment details
+router.get('/', paymentDetailsController.getAll);
+
+// GET payment detail by ID
+router.get('/:id', paymentDetailsController.getById);
+
+// POST create new payment detail
+router.post('/', paymentDetailsController.create);
+
+// PUT update payment detail
+router.put('/:id', paymentDetailsController.update);
+
+// DELETE payment detail
+router.delete('/:id', paymentDetailsController.deletePaymentDetail);
 
 module.exports = router;

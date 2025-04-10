@@ -1,6 +1,33 @@
 const Itinerary = require('../schemas/Itinerary');
 const Destinations = require('../schemas/Destinations');
-const Activity = require('../schemas/Activity');
+const Activity = require('../schemas/activity');
+
+// Lấy tất cả itineraries
+exports.getAll = async (req, res) => {
+  try {
+    const itineraries = await Itinerary.find()
+      .populate('destination')
+      .populate('activities');
+    res.status(200).json({ success: true, data: itineraries });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Error fetching itineraries: ' + err.message });
+  }
+};
+
+// Lấy thông tin itinerary theo ID
+exports.getById = async (req, res) => {
+  try {
+    const itinerary = await Itinerary.findById(req.params.id)
+      .populate('destination')
+      .populate('activities');
+    if (!itinerary) {
+      return res.status(404).json({ success: false, message: 'Itinerary not found' });
+    }
+    res.status(200).json({ success: true, data: itinerary });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Error fetching itinerary: ' + err.message });
+  }
+};
 
 // Tạo mới itinerary
 exports.create = async (req, res) => {
@@ -61,20 +88,5 @@ exports.remove = async (req, res) => {
     res.status(204).json({ success: true, message: 'Itinerary deleted successfully' });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Error deleting itinerary: ' + err.message });
-  }
-};
-
-// Lấy thông tin itinerary theo ID
-exports.getById = async (req, res) => {
-  try {
-    const itinerary = await Itinerary.findById(req.params.id)
-      .populate('destination')
-      .populate('activities');  // Populate các hoạt động nếu cần thiết
-    if (!itinerary) {
-      return res.status(404).json({ success: false, message: 'Itinerary not found' });
-    }
-    res.status(200).json({ success: true, data: itinerary });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Error fetching itinerary: ' + err.message });
   }
 };

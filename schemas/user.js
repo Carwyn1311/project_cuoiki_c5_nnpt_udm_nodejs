@@ -89,4 +89,4 @@ userSchema.methods.getRoles = function () {
   return this.roles.map(role => role.name);  // Giả sử "role" là một schema khác
 };
 
-module.exports = mongoose.model('User', userSchema);
+module.exports = mongoose.models.User || mongoose.model('User', userSchema);

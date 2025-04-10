@@ -34,4 +34,4 @@ const reviewsSchema = new Schema(
 );
 
 // Export model Reviews
-module.exports = mongoose.model('Reviews', reviewsSchema);
+module.exports = mongoose.models.Reviews || mongoose.model('Reviews', reviewsSchema);

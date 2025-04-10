@@ -17,4 +17,4 @@ const destinationImagesSchema = new Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model('DestinationImages', destinationImagesSchema);
+module.exports = mongoose.models.DestinationImages || mongoose.model('DestinationImages', destinationImagesSchema);

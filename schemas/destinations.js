@@ -67,4 +67,4 @@ const destinationsSchema = new Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model('Destinations', destinationsSchema);
+module.exports = mongoose.models.Destination || mongoose.model('Destination', destinationsSchema);

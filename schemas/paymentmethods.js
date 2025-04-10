@@ -22,4 +22,4 @@ const paymentMethodsSchema = new Schema(
 );
 
 // Export model PaymentMethods
-module.exports = mongoose.model('PaymentMethods', paymentMethodsSchema);
+module.exports = mongoose.models.PaymentMethods || mongoose.model('PaymentMethods', paymentMethodsSchema);

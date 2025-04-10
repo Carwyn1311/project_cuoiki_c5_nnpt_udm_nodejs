@@ -53,4 +53,4 @@ const bookingsSchema = new Schema(
 );
 
 // Export model Bookings
-module.exports = mongoose.model('Bookings', bookingsSchema);
+module.exports = mongoose.models.Bookings || mongoose.model('Bookings', bookingsSchema);

@@ -28,9 +28,9 @@ app.use('/activity', require('./routes/activity'));
 app.use('/bank', require('./routes/bank'));
 app.use('/bookings', require('./routes/bookings'));
 app.use('/city', require('./routes/city'));
-app.use('/descriptionfile', require('./routes/descriptionfile'));
-app.use('/destinationimages', require('./routes/destinationimages'));
-app.use('/destinations', require('./routes/destinations'));
+//app.use('/descriptionfile', require('./routes/descriptionfile'));
+//app.use('/destinationimages', require('./routes/destinationimages'));
+//app.use('/destinations', require('./routes/destinations'));
 app.use('/itinerary', require('./routes/itinerary'));
 app.use('/paymentdetails', require('./routes/paymentdetails'));
 app.use('/paymentmethods', require('./routes/paymentmethods'));
@@ -40,12 +40,12 @@ app.use('/reviews', require('./routes/reviews'));
 app.use('/roles', require('./routes/roles'));
 app.use('/ticketprices', require('./routes/ticketprices'));
 app.use('/wishlist', require('./routes/wishlist'));
+app.use('/upload', require('./routes/upload'));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Kết nối MongoDB
-mongoose.connect('mongodb://localhost:27017/TourBookingDB', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-}).then(() => {
+mongoose.connect('mongodb://localhost:27017/TourBookingDB')
+.then(() => {
     console.log("Connected to MongoDB");
 }).catch(err => {
     console.log("MongoDB connection error:", err);

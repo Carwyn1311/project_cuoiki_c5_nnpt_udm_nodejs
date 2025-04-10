@@ -25,4 +25,4 @@ const citySchema = new Schema(
 );
 
 // Export model City
-module.exports = mongoose.model('City', citySchema);
+module.exports = mongoose.models.City || mongoose.model('City', citySchema);

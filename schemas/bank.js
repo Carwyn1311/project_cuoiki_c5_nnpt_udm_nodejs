@@ -40,4 +40,4 @@ const banksSchema = new Schema(
 );
 
 // Export model Banks
-module.exports = mongoose.model('Banks', banksSchema);
+module.exports = mongoose.models.Banks || mongoose.model('Banks', banksSchema);

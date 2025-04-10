@@ -1,38 +1,62 @@
-// controllers/role.js
-const roleModel = require('../schemas/role');
+const Role = require('../schemas/role');
 
-exports.getAll = async (req, res, next) => {
+// Lấy tất cả roles
+exports.getAll = async (req, res) => {
   try {
-    const items = await roleModel.find();
-    res.status(200).json({ success: true, data: items });
-  } catch (err) { next(err); }
+    const roles = await Role.find();
+    res.status(200).json({ success: true, data: roles });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 };
 
-exports.getById = async (req, res, next) => {
+// Lấy role theo ID
+exports.getById = async (req, res) => {
   try {
-    const item = await roleModel.findById(req.params.id);
-    if (!item) return res.status(404).json({ success: false, message: 'Role not found' });
-    res.status(200).json({ success: true, data: item });
-  } catch (err) { next(err); }
+    const role = await Role.findById(req.params.id);
+    if (!role) {
+      return res.status(404).json({ success: false, message: 'Role not found' });
+    }
+    res.status(200).json({ success: true, data: role });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 };
 
-exports.create = async (req, res, next) => {
+// Tạo role mới
+exports.create = async (req, res) => {
   try {
-    const newItem = await roleModel.create(req.body);
-    res.status(201).json({ success: true, data: newItem });
-  } catch (err) { next(err); }
+    const { name, description } = req.body;
+    const newRole = await Role.create({ name, description });
+    res.status(201).json({ success: true, data: newRole });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 };
 
-exports.update = async (req, res, next) => {
+// Cập nhật role
+exports.update = async (req, res) => {
   try {
-    const updatedItem = await roleModel.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.status(200).json({ success: true, data: updatedItem });
-  } catch (err) { next(err); }
+    const { name, description } = req.body;
+    const role = await Role.findByIdAndUpdate(req.params.id, { name, description }, { new: true });
+    if (!role) {
+      return res.status(404).json({ success: false, message: 'Role not found' });
+    }
+    res.status(200).json({ success: true, data: role });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 };
 
-exports.remove = async (req, res, next) => {
+// Xóa role
+exports.delete = async (req, res) => {
   try {
-    await roleModel.findByIdAndDelete(req.params.id);
+    const role = await Role.findByIdAndDelete(req.params.id);
+    if (!role) {
+      return res.status(404).json({ success: false, message: 'Role not found' });
+    }
     res.status(200).json({ success: true, message: 'Role deleted successfully' });
-  } catch (err) { next(err); }
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 };

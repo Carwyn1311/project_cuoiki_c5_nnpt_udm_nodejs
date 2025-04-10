@@ -60,3 +60,18 @@ exports.getAll = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
+// Xóa city theo ID
+exports.delete = async (req, res) => {
+  try {
+    const deletedCity = await City.findByIdAndDelete(req.params.id);
+    
+    if (!deletedCity) {
+      return res.status(404).json({ success: false, message: 'City not found' });
+    }
+
+    res.status(200).json({ success: true, message: 'City deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};

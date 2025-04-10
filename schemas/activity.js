@@ -1,4 +1,3 @@
-// models/activity.model.js
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
@@ -26,5 +25,5 @@ const activitySchema = new Schema(
   { timestamps: true } // Mongoose sẽ tự động tạo createdAt và updatedAt
 );
 
-// Export model Activity
-module.exports = mongoose.model('Activity', activitySchema);
+// Kiểm tra xem model đã tồn tại chưa trước khi định nghĩa
+module.exports = mongoose.models.Activity || mongoose.model('Activity', activitySchema);
