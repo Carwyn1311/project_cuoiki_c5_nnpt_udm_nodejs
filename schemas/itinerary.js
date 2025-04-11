@@ -10,15 +10,17 @@ const itinerarySchema = new Schema({
     type: Date,
     required: true
   },
-  destination: {
+  destination_id: {
     type: Schema.Types.ObjectId,
     ref: 'Destination',
     required: true
   },
   activities: [{
-    type: Schema.Types.ObjectId,
-    ref: 'Activity'
+      type: Schema.Types.ObjectId,
+      ref: 'Activity'
   }]
-}, { timestamps: true });
+}, {
+  timestamps: true
+});
 
 module.exports = mongoose.models.Itinerary || mongoose.model('Itinerary', itinerarySchema);

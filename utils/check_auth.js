@@ -1,10 +1,11 @@
 let jwt = require('jsonwebtoken')
 let constants = require('../utils/constants')
 let userController = require('../controllers/users')
+
 module.exports = {
     check_authentication: async function (req, res, next) {
         if (!req.header || !req.headers.authorization) {
-            throw new Error("ban chua dang nhap")
+            throw new Error("Bạn chưa đăng nhập")
         }
         let authorization = req.headers.authorization;
         if (authorization.startsWith("Bearer")) {
@@ -17,16 +18,20 @@ module.exports = {
                 next();
             }
         } else {
-            throw new Error("ban chua dang nhap")
+            throw new Error("Bạn chưa đăng nhập")
         }
     },
-    check_authorization: function (requiredRole) {
+    check_authorization: function (requiredRoles) {
         return function (req, res, next) {
-            let role = req.user.role.name;
-            if (requiredRole.includes(role)) {
+            const userRoles = req.user.roles.map(role => role.name);
+            
+            // Kiểm tra xem người dùng có vai trò nào trong danh sách requiredRoles không
+            const hasRequiredRole = requiredRoles.some(role => userRoles.includes(role));
+            
+            if (hasRequiredRole) {
                 next();
             } else {
-                throw new Error("ban khong co quyen")
+                throw new Error("Bạn không có quyền thực hiện hành động này")
             }
         }
     }

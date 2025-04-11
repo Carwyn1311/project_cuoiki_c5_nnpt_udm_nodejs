@@ -1,37 +1,28 @@
-// models/reviews.model.js
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
-// Tạo schema cho Reviews
-const reviewsSchema = new Schema(
-  {
-    rating: {
-      type: Number,
-      required: true
-    },
-    comment: {
-      type: String,
-      required: true
-    },
-    created_at: {
-      type: Date,
-      default: Date.now
-    },
-    // Mối quan hệ với User
-    user: {
-      type: Schema.Types.ObjectId,
-      ref: 'User', // Liên kết với model User
-      required: true
-    },
-    // Mối quan hệ với Destinations
-    destination: {
-      type: Schema.Types.ObjectId,
-      ref: 'Destinations', // Liên kết với model Destinations
-      required: true
-    }
+const reviewSchema = new Schema({
+  comment: {
+    type: String
   },
-  { timestamps: true } // Tạo `createdAt` và `updatedAt` tự động
-);
+  rating: {
+    type: Number,
+    min: 1,
+    max: 5,
+    required: true
+  },
+  destination_id: {
+    type: Schema.Types.ObjectId,
+    ref: 'Destination',
+    required: true
+  },
+  user_id: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  }
+}, {
+  timestamps: true
+});
 
-// Export model Reviews
-module.exports = mongoose.models.Reviews || mongoose.model('Reviews', reviewsSchema);
+module.exports = mongoose.models.Review || mongoose.model('Review', reviewSchema);

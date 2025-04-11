@@ -1,13 +1,24 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const DestinationImages = require('../schemas/destinationimages');
-const DescriptionFile = require('../schemas/descriptionfile');
+const DestinationImage = require('../schemas/destinationimages');
 
 // Đảm bảo thư mục uploads tồn tại
 const uploadDir = 'uploads';
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
+}
+
+// Đảm bảo thư mục uploads/images tồn tại
+const imageDir = 'uploads/images';
+if (!fs.existsSync(imageDir)) {
+  fs.mkdirSync(imageDir, { recursive: true });
+}
+
+// Đảm bảo thư mục uploads/files tồn tại
+const fileDir = 'uploads/files';
+if (!fs.existsSync(fileDir)) {
+  fs.mkdirSync(fileDir, { recursive: true });
 }
 
 // Cấu hình multer cho images
@@ -70,11 +81,9 @@ exports.handleImageUpload = async (req, res) => {
       return res.status(400).json({ success: false, message: 'No image uploaded' });
     }
     
-    const image = await DestinationImages.create({
+    const image = await DestinationImage.create({
       image_url: req.file.path,
-      destination: req.body.destinationId,
-      description: req.body.description,
-      is_main: req.body.isMain === 'true'
+      destination_id: req.body.destinationId
     });
     
     res.status(201).json({ success: true, data: image });
@@ -90,14 +99,17 @@ exports.handleFileUpload = async (req, res) => {
       return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
     
-    const file = await DescriptionFile.create({
-      file_url: req.file.path,
-      file_name: req.file.originalname,
-      file_type: req.file.mimetype,
-      destination: req.body.destinationId
+    // Vì không có model DescriptionFile trong schema mới, bạn có thể lưu thông tin file vào một collection khác
+    // hoặc chỉ trả về đường dẫn file
+    res.status(201).json({ 
+      success: true, 
+      data: {
+        file_url: req.file.path,
+        file_name: req.file.originalname,
+        file_type: req.file.mimetype,
+        destination_id: req.body.destinationId
+      } 
     });
-    
-    res.status(201).json({ success: true, data: file });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

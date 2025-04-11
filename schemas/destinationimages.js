@@ -1,20 +1,16 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
-// Tạo schema cho DestinationImages
-const destinationImagesSchema = new Schema(
-  {
-    image_url: {
-      type: String,
-      required: true
-    },
-    destination: {
-      type: Schema.Types.ObjectId,
-      ref: 'Destinations',
-      required: true
-    }
+const destinationImageSchema = new Schema({
+  image_url: {
+    type: String,
+    required: true
   },
-  { timestamps: true }
-);
+  destination_id: {
+    type: Schema.Types.ObjectId,
+    ref: 'Destination',
+    required: true
+  }
+});
 
-module.exports = mongoose.models.DestinationImages || mongoose.model('DestinationImages', destinationImagesSchema);
+module.exports = mongoose.models.DestinationImage || mongoose.model('DestinationImage', destinationImageSchema);

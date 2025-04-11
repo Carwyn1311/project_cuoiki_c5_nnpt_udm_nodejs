@@ -1,96 +1,127 @@
-const Bookings = require('../schemas/Bookings');
-const jwt = require('jsonwebtoken');
-const constants = require('../utils/constants');
+const Booking = require('../schemas/Bookings');
+const User = require('../schemas/user');
+const Destination = require('../schemas/destinations');
+const PaymentDetail = require('../schemas/paymentdetails');
 
-// Tạo mới booking
-exports.create = async (req, res) => {
-  try {
-    const { booking_date, adult_tickets, child_tickets, status, days, destination_id } = req.body;
-    const token = req.headers.authorization.split(" ")[1];  // Lấy token từ header
-    const decoded = jwt.verify(token, constants.SECRET_KEY);  // Giải mã token để lấy thông tin user
-    const username = decoded.id;
-
-    // Tạo đối tượng Bookings từ dữ liệu yêu cầu
-    const newBooking = new Bookings({
-      booking_date,
-      adult_tickets,
-      child_tickets,
-      status,
-      days,
-      user: username,
-      destination: destination_id
-    });
-
-    const savedBooking = await newBooking.save();
-    res.status(201).json({ success: true, data: savedBooking });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-// Lấy thông tin booking theo ID
-exports.getById = async (req, res) => {
-  try {
-    const booking = await Bookings.findById(req.params.id)
-      .populate('user')
-      .populate('destination')
-      .populate('paymentDetails'); // Nếu bạn có các mối quan hệ khác
-    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
-    res.status(200).json({ success: true, data: booking });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-// Lấy tất cả bookings
-exports.getAll = async (req, res) => {
-  try {
-    const bookings = await Bookings.find()
-      .populate('user')
-      .populate('destination')
-      .populate('paymentDetails');
-    res.status(200).json({ success: true, data: bookings });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-// Cập nhật booking theo ID
-exports.update = async (req, res) => {
-  try {
-    const { booking_date, adult_tickets, child_tickets, status, days, destination_id } = req.body;
-    const token = req.headers.authorization.split(" ")[1];  // Lấy token từ header
-    const decoded = jwt.verify(token, constants.SECRET_KEY);  // Giải mã token để lấy thông tin user
-    const username = decoded.id;
-
-    // Cập nhật booking theo ID
-    const updatedBooking = await Bookings.findByIdAndUpdate(req.params.id, {
-      booking_date,
-      adult_tickets,
-      child_tickets,
-      status,
-      days,
-      user: username,
-      destination: destination_id
-    }, { new: true });
-
-    if (!updatedBooking) {
-      return res.status(404).json({ success: false, message: 'Booking not found' });
-    }
-
-    res.status(200).json({ success: true, message: 'Booking updated successfully', data: updatedBooking });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-// Xóa booking theo ID
-exports.remove = async (req, res) => {
-  try {
-    const booking = await Bookings.findByIdAndDelete(req.params.id);
-    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
-    res.status(200).json({ success: true, message: 'Booking deleted successfully' });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+module.exports = {
+    // Lấy tất cả đơn đặt vé
+    GetAllBookings: async function() {
+        return await Booking.find()
+            .populate('user_id')
+            .populate('destination_id')
+            .populate('payment_details');
+    },
+    
+    // Lấy chi tiết một đơn đặt vé
+    GetBookingById: async function(id) {
+        const booking = await Booking.findById(id)
+            .populate('user_id')
+            .populate('destination_id')
+            .populate('payment_details');
+            
+        if (!booking) {
+            throw new Error('Đơn đặt vé không tồn tại');
+        }
+        
+        return booking;
+    },
+    
+    // Tạo đơn đặt vé mới
+    CreateBooking: async function(bookingData) {
+        // Kiểm tra người dùng có tồn tại không
+        const user = await User.findById(bookingData.user_id);
+        if (!user) {
+            throw new Error('Người dùng không tồn tại');
+        }
+        
+        // Kiểm tra điểm đến có tồn tại không
+        const destination = await Destination.findById(bookingData.destination_id);
+        if (!destination) {
+            throw new Error('Điểm đến không tồn tại');
+        }
+        
+        const newBooking = new Booking({
+            adult_tickets: bookingData.adult_tickets,
+            child_tickets: bookingData.child_tickets,
+            booking_date: bookingData.booking_date || new Date(),
+            days: bookingData.days,
+            status: bookingData.status || 'pending',
+            destination_id: bookingData.destination_id,
+            user_id: bookingData.user_id
+        });
+        
+        await newBooking.save();
+        
+        // Cập nhật mảng bookings trong user
+        user.bookings.push(newBooking._id);
+        await user.save();
+        
+        return newBooking;
+    },
+    
+    // Cập nhật đơn đặt vé
+    UpdateBooking: async function(id, bookingData) {
+        const booking = await Booking.findById(id);
+        if (!booking) {
+            throw new Error('Đơn đặt vé không tồn tại');
+        }
+        
+        if (bookingData.adult_tickets) booking.adult_tickets = bookingData.adult_tickets;
+        if (bookingData.child_tickets) booking.child_tickets = bookingData.child_tickets;
+        if (bookingData.booking_date) booking.booking_date = bookingData.booking_date;
+        if (bookingData.days) booking.days = bookingData.days;
+        if (bookingData.status) booking.status = bookingData.status;
+        
+        await booking.save();
+        return booking;
+    },
+    
+    // Xóa đơn đặt vé
+    DeleteBooking: async function(id) {
+        const booking = await Booking.findById(id);
+        if (!booking) {
+            throw new Error('Đơn đặt vé không tồn tại');
+        }
+        
+        // Xóa đơn đặt vé khỏi user
+        await User.findByIdAndUpdate(
+            booking.user_id,
+            { $pull: { bookings: id } }
+        );
+        
+        // Xóa chi tiết thanh toán liên quan
+        if (booking.payment_details) {
+            await PaymentDetail.findByIdAndDelete(booking.payment_details);
+        }
+        
+        await Booking.findByIdAndDelete(id);
+        return { message: 'Xóa đơn đặt vé thành công' };
+    },
+    
+    // Lấy đơn đặt vé theo người dùng
+    GetBookingsByUser: async function(userId) {
+        return await Booking.find({ user_id: userId })
+            .populate('destination_id')
+            .populate('payment_details');
+    },
+    
+    // Lấy đơn đặt vé theo trạng thái
+    GetBookingsByStatus: async function(status) {
+        return await Booking.find({ status })
+            .populate('user_id')
+            .populate('destination_id')
+            .populate('payment_details');
+    },
+    
+    // Cập nhật trạng thái đơn đặt vé
+    UpdateBookingStatus: async function(id, status) {
+      const booking = await Booking.findById(id);
+      if (!booking) {
+          throw new Error('Đơn đặt vé không tồn tại');
+      }
+      
+      booking.status = status;
+      await booking.save();
+      return booking;
   }
 };

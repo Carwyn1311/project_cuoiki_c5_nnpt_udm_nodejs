@@ -6,12 +6,12 @@ let jwt = require('jsonwebtoken');
 let constants = require('../utils/constants');
 let { check_authentication } = require('../utils/check_auth');
 let bcrypt = require('bcrypt');
-let { validate, validationSiginUp } = require('../utils/validator');
+let { validate, validationLogin, validationSiginUp } = require('../utils/validator');
 let crypto = require('crypto');
 let mailer = require('../utils/mailer');
 
 // Login route
-router.post('/login', async function (req, res, next) {
+router.post('/login', validationLogin, validate, async function (req, res, next) {
     try {
         let { username, password } = req.body;
         let result = await userController.Login(username, password);
@@ -19,7 +19,13 @@ router.post('/login', async function (req, res, next) {
             id: result._id,
             expire: new Date(Date.now() + 24 * 3600 * 1000)
         }, constants.SECRET_KEY);
-        CreateSuccessRes(res, 200, token);
+        CreateSuccessRes(res, 200, { token, user: { 
+            id: result._id,
+            username: result.username,
+            email: result.email,
+            fullname: result.fullname,
+            roles: result.roles.map(role => role.name)
+        }});
     } catch (error) {
         next(error);
     }
@@ -28,13 +34,30 @@ router.post('/login', async function (req, res, next) {
 // Signup route
 router.post('/signup', validationSiginUp, validate, async function (req, res, next) {
     try {
-        let { username, password, email } = req.body;
-        let result = await userController.CreateAnUser(username, password, email, 'user');
+        let { username, password, email, fullname, phone } = req.body;
+        let result = await userController.CreateAnUser(username, password, email, 'User');
+        
+        // Cập nhật thông tin thêm nếu có
+        if (fullname || phone) {
+            let updateData = {};
+            if (fullname) updateData.fullname = fullname;
+            if (phone) updateData.phone = phone;
+            
+            await userController.UpdateUser(result._id, updateData);
+        }
+        
         let token = jwt.sign({
             id: result._id,
             expire: new Date(Date.now() + 24 * 3600 * 1000)
         }, constants.SECRET_KEY);
-        CreateSuccessRes(res, 200, token);
+        
+        CreateSuccessRes(res, 201, { token, user: { 
+            id: result._id,
+            username: result.username,
+            email: result.email,
+            fullname: result.fullname || '',
+            roles: ['User']
+        }});
     } catch (error) {
         next(error);
     }
@@ -42,36 +65,61 @@ router.post('/signup', validationSiginUp, validate, async function (req, res, ne
 
 // Get current user
 router.get("/me", check_authentication, async function (req, res, next) {
-    CreateSuccessRes(res, 200, req.user);
+    try {
+        // Lấy thông tin user mới nhất từ database
+        const user = await userController.GetUserById(req.user._id);
+        
+        // Trả về thông tin cần thiết
+        CreateSuccessRes(res, 200, {
+            id: user._id,
+            username: user.username,
+            email: user.email,
+            fullname: user.fullname,
+            phone: user.phone,
+            address: user.address,
+            avata: user.avata,
+            date_year: user.date_year,
+            roles: user.roles.map(role => role.name)
+        });
+    } catch (error) {
+        next(error);
+    }
 });
 
 // Change password
 router.post('/changepassword', check_authentication, async function (req, res, next) {
-    let { oldpassword, newpassword } = req.body;
-    if (bcrypt.compareSync(oldpassword, req.user.password)) {
+    try {
+        let { oldpassword, newpassword } = req.body;
+        
+        // Kiểm tra password cũ
+        const isMatch = await bcrypt.compare(oldpassword, req.user.password);
+        if (!isMatch) {
+            throw new Error("Mật khẩu cũ không chính xác");
+        }
+        
+        // Cập nhật password mới
         let user = req.user;
         user.password = newpassword;
         await user.save();
-        CreateSuccessRes(res, 200, user);
-    } else {
-        next(new Error("Old password is incorrect"));
+        
+        CreateSuccessRes(res, 200, { message: "Đổi mật khẩu thành công" });
+    } catch (error) {
+        next(error);
     }
 });
 
 // Forgot password - gửi mã xác minh
-router.post('/forgotpassword', async (req, res) => {
-    const { email } = req.body;
-    if (!email) {
-        return res.status(400).json({ success: false, message: 'Email is required' });
-    }
+router.post('/forgotpassword', async (req, res, next) => {
     try {
-        const user = await userController.GetUserByEmail(email);
-        if (!user) {
-            return res.status(404).json({ success: false, message: 'Email not found' });
+        const { email } = req.body;
+        if (!email) {
+            throw new Error("Email không được để trống");
         }
-
+        
+        const user = await userController.GetUserByEmail(email);
+        
         // Tạo mã xác minh và lưu trữ tạm thời
-        const verificationCode = crypto.randomBytes(6).toString('hex');
+        const verificationCode = crypto.randomBytes(3).toString('hex'); // Mã 6 ký tự
         user.tokenResetPassword = verificationCode;
         user.tokenResetPasswordExp = Date.now() + 10 * 60 * 1000;  // Mã hết hạn trong 10 phút
         await user.save();
@@ -79,66 +127,97 @@ router.post('/forgotpassword', async (req, res) => {
         // Gửi mã xác minh qua email
         await mailer.sendVerificationCode(email, verificationCode);
 
-        return res.status(200).json({ success: true, message: 'Verification code sent successfully' });
+        CreateSuccessRes(res, 200, { message: "Mã xác minh đã được gửi đến email của bạn" });
     } catch (error) {
-        return res.status(500).json({ success: false, message: 'Error sending verification code: ' + error.message });
+        next(error);
     }
 });
 
 // Verify code - xác minh mã xác minh
-router.post('/verify-code', async (req, res) => {
-    const { email, code } = req.body;
-    if (!email || !code) {
-        return res.status(400).json({ success: false, message: 'Email and code are required' });
-    }
+router.post('/verify-code', async (req, res, next) => {
     try {
+        const { email, code } = req.body;
+        if (!email || !code) {
+            throw new Error("Email và mã xác minh không được để trống");
+        }
+        
         const user = await userController.GetUserByEmail(email);
         if (!user || user.tokenResetPassword !== code || user.tokenResetPasswordExp < Date.now()) {
-            return res.status(400).json({ success: false, message: 'Invalid or expired verification code' });
+            throw new Error("Mã xác minh không hợp lệ hoặc đã hết hạn");
         }
 
         // Token hợp lệ, tạo JWT token mới để reset mật khẩu
         const token = jwt.sign({ id: user._id }, constants.SECRET_KEY, { expiresIn: '1h' });
-        return res.status(200).json({ success: true, message: 'Verification successful', token });
+        CreateSuccessRes(res, 200, { message: "Xác minh thành công", token });
     } catch (error) {
-        return res.status(500).json({ success: false, message: 'Error verifying code: ' + error.message });
+        next(error);
     }
 });
 
 // Reset password - đặt lại mật khẩu sau khi xác minh mã
-router.post('/resetpassword/:token', async (req, res) => {
-    const { token } = req.params;
-    const { newPassword } = req.body;
-    if (!newPassword) {
-        return res.status(400).json({ success: false, message: 'New password is required' });
-    }
-
+router.post('/resetpassword/:token', async (req, res, next) => {
     try {
-        // Giải mã token để lấy ID người dùng
-        const decoded = jwt.verify(token, constants.SECRET_KEY);
-        const user = await userRepository.findById(decoded.id);
-        if (!user) {
-            return res.status(404).json({ success: false, message: 'User not found' });
+        const { token } = req.params;
+        const { newPassword } = req.body;
+        if (!newPassword) {
+            throw new Error("Mật khẩu mới không được để trống");
         }
 
+        // Giải mã token để lấy ID người dùng
+        const decoded = jwt.verify(token, constants.SECRET_KEY);
+        const user = await userController.GetUserById(decoded.id);
+        
         // Cập nhật mật khẩu người dùng
-        user.password = bcrypt.hashSync(newPassword, 10); // Mã hóa mật khẩu mới
+        user.password = newPassword; // Sẽ được hash trong pre-save hook
+        user.tokenResetPassword = undefined;
+        user.tokenResetPasswordExp = undefined;
         await user.save();
 
-        return res.status(200).json({ success: true, message: 'Password reset successfully' });
+        CreateSuccessRes(res, 200, { message: "Đặt lại mật khẩu thành công" });
     } catch (error) {
-        return res.status(500).json({ success: false, message: 'Error resetting password: ' + error.message });
+        next(error);
     }
 });
 
 // Verify token - kiểm tra tính hợp lệ của token
-router.post('/verify-token', (req, res) => {
-    const { token } = req.body;
+router.post('/verify-token', (req, res, next) => {
     try {
-        const isValid = jwt.verify(token, constants.SECRET_KEY);
-        return res.status(200).json({ success: true, message: 'Token is valid' });
+        const { token } = req.body;
+        if (!token) {
+            throw new Error("Token không được để trống");
+        }
+        
+        const decoded = jwt.verify(token, constants.SECRET_KEY);
+        CreateSuccessRes(res, 200, { valid: true, userId: decoded.id });
     } catch (error) {
-        return res.status(401).json({ success: false, message: 'Invalid token' });
+        // Không gọi next(error) vì đây là kiểm tra token, trả về false nếu không hợp lệ
+        CreateSuccessRes(res, 200, { valid: false });
+    }
+});
+
+// Update profile - cập nhật thông tin cá nhân
+router.put('/profile', check_authentication, async function (req, res, next) {
+    try {
+        const { fullname, phone, address } = req.body;
+        const updateData = {};
+        
+        if (fullname) updateData.fullname = fullname;
+        if (phone) updateData.phone = phone;
+        if (address) updateData.address = address;
+        
+        const updatedUser = await userController.UpdateUser(req.user._id, updateData);
+        
+        CreateSuccessRes(res, 200, {
+            id: updatedUser._id,
+            username: updatedUser.username,
+            email: updatedUser.email,
+            fullname: updatedUser.fullname,
+            phone: updatedUser.phone,
+            address: updatedUser.address,
+            avata: updatedUser.avata
+        });
+    } catch (error) {
+        next(error);
     }
 });
 
@@ -146,7 +225,7 @@ router.post('/verify-token', (req, res) => {
 router.post('/logout', (req, res) => {
     // Không có yêu cầu backend cụ thể để xử lý logout trong Node.js.
     // Thông thường, frontend sẽ xóa token hoặc làm cho token hết hiệu lực.
-    res.status(200).json({ success: true, message: 'Logged out successfully' });
+    CreateSuccessRes(res, 200, { message: "Đăng xuất thành công" });
 });
 
 module.exports = router;

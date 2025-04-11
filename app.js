@@ -8,6 +8,7 @@ var { CreateErrorRes } = require('./utils/ResHandler');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
+var authRouter = require('./routes/auth');
 
 var app = express();
 
@@ -21,25 +22,19 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Sử dụng usersRouter cho các routes liên quan đến người dùng
 app.use('/', indexRouter);
+app.use('/auth', authRouter);
 app.use('/users', usersRouter);
-app.use('/activity', require('./routes/activity'));
-app.use('/bank', require('./routes/bank'));
-app.use('/bookings', require('./routes/bookings'));
-app.use('/city', require('./routes/city'));
-//app.use('/descriptionfile', require('./routes/descriptionfile'));
-//app.use('/destinationimages', require('./routes/destinationimages'));
-//app.use('/destinations', require('./routes/destinations'));
-app.use('/itinerary', require('./routes/itinerary'));
-app.use('/paymentdetails', require('./routes/paymentdetails'));
-app.use('/paymentmethods', require('./routes/paymentmethods'));
-app.use('/province', require('./routes/province'));
-app.use('/qrcode', require('./routes/qrcode'));
-app.use('/reviews', require('./routes/reviews'));
 app.use('/roles', require('./routes/roles'));
-app.use('/ticketprices', require('./routes/ticketprices'));
-app.use('/wishlist', require('./routes/wishlist'));
+app.use('/provinces', require('./routes/provinces'));
+app.use('/cities', require('./routes/cities'));
+app.use('/destinations', require('./routes/destinations'));
+app.use('/destination-images', require('./routes/destinationImages'));
+app.use('/itineraries', require('./routes/itineraries'));
+app.use('/activities', require('./routes/activities'));
+app.use('/bookings', require('./routes/bookings'));
+app.use('/payment-details', require('./routes/paymentdetails'));
+app.use('/reviews', require('./routes/reviews'));
 app.use('/upload', require('./routes/upload'));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 

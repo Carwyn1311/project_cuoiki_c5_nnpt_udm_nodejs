@@ -1,29 +1,19 @@
-// models/province.model.js
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
-// Tạo schema cho Province
-const provinceSchema = new Schema(
-  {
-    name: {
-      type: String,
-      unique: true,
-      required: true
-    },
-    country: {
-      type: String,
-      required: true
-    },
-    // Mối quan hệ với City (Một province có nhiều city)
-    cities: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: 'City' // Liên kết với model City
-      }
-    ]
+const provinceSchema = new Schema({
+  name: {
+    type: String,
+    required: true
   },
-  { timestamps: true } // Tạo `createdAt` và `updatedAt` tự động
-);
+  country: {
+    type: String,
+    default: 'Vietnam'
+  },
+  cities: [{
+    type: Schema.Types.ObjectId,
+    ref: 'City'
+  }]
+});
 
-// Export model Province
 module.exports = mongoose.models.Province || mongoose.model('Province', provinceSchema);

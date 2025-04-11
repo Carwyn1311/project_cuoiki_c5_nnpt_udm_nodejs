@@ -1,60 +1,120 @@
-const PaymentDetails = require('../schemas/PaymentDetails');
+const PaymentDetails = require('../schemas/paymentdetails');
+const Booking = require('../schemas/Bookings');
+const User = require('../schemas/user');
 
-// Lấy tất cả payment details
-exports.getAll = async (req, res) => {
-  try {
-    const paymentDetails = await PaymentDetails.find();
-    res.status(200).json({ success: true, data: paymentDetails });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-// Lấy payment detail theo ID
-exports.getById = async (req, res) => {
-  try {
-    const paymentDetail = await PaymentDetails.findById(req.params.id);
-    if (!paymentDetail) {
-      return res.status(404).json({ success: false, message: 'Payment detail not found' });
+module.exports = {
+    // Lấy tất cả chi tiết thanh toán
+    GetAllPaymentDetails: async function() {
+        return await PaymentDetail.find()
+            .populate('booking_id')
+            .populate('user_id')
+            .populate('payment_method_id');
+    },
+    
+    // Lấy chi tiết một thanh toán
+    GetPaymentDetailById: async function(id) {
+        const paymentDetail = await PaymentDetail.findById(id)
+            .populate('booking_id')
+            .populate('user_id')
+            .populate('payment_method_id');
+            
+        if (!paymentDetail) {
+            throw new Error('Chi tiết thanh toán không tồn tại');
+        }
+        
+        return paymentDetail;
+    },
+    
+    // Tạo chi tiết thanh toán mới
+    CreatePaymentDetail: async function(paymentData) {
+        // Kiểm tra đơn đặt vé có tồn tại không
+        const booking = await Booking.findById(paymentData.booking_id);
+        if (!booking) {
+            throw new Error('Đơn đặt vé không tồn tại');
+        }
+        
+        // Kiểm tra người dùng có tồn tại không
+        const user = await User.findById(paymentData.user_id);
+        if (!user) {
+            throw new Error('Người dùng không tồn tại');
+        }
+        
+        // Tạo mã hóa đơn
+        const invoiceCode = 'INV-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+        
+        const newPaymentDetail = new PaymentDetail({
+            amount: paymentData.amount,
+            payment_date: paymentData.payment_date || new Date(),
+            status: paymentData.status || 'pending',
+            booking_id: paymentData.booking_id,
+            payment_method_id: paymentData.payment_method_id,
+            user_id: paymentData.user_id,
+            invoice_code: invoiceCode
+        });
+        
+        await newPaymentDetail.save();
+        
+        // Cập nhật payment_details trong booking
+        booking.payment_details = newPaymentDetail._id;
+        await booking.save();
+        
+        return newPaymentDetail;
+    },
+    
+    // Cập nhật chi tiết thanh toán
+    UpdatePaymentDetail: async function(id, paymentData) {
+        const paymentDetail = await PaymentDetail.findById(id);
+        if (!paymentDetail) {
+            throw new Error('Chi tiết thanh toán không tồn tại');
+        }
+        
+        if (paymentData.amount) paymentDetail.amount = paymentData.amount;
+        if (paymentData.payment_date) paymentDetail.payment_date = paymentData.payment_date;
+        if (paymentData.status) paymentDetail.status = paymentData.status;
+        if (paymentData.payment_method_id) paymentDetail.payment_method_id = paymentData.payment_method_id;
+        
+        await paymentDetail.save();
+        
+        // Nếu thanh toán thành công, cập nhật trạng thái đơn đặt vé
+        if (paymentData.status === 'completed') {
+            await Booking.findByIdAndUpdate(
+                paymentDetail.booking_id,
+                { status: 'paid' }
+            );
+        }
+        
+        return paymentDetail;
+    },
+    
+    // Xóa chi tiết thanh toán
+    DeletePaymentDetail: async function(id) {
+        const paymentDetail = await PaymentDetail.findById(id);
+        if (!paymentDetail) {
+            throw new Error('Chi tiết thanh toán không tồn tại');
+        }
+        
+        // Xóa tham chiếu trong booking
+        await Booking.findByIdAndUpdate(
+            paymentDetail.booking_id,
+            { $unset: { payment_details: 1 } }
+        );
+        
+        await PaymentDetail.findByIdAndDelete(id);
+        return { message: 'Xóa chi tiết thanh toán thành công' };
+    },
+    
+    // Lấy chi tiết thanh toán theo người dùng
+    GetPaymentDetailsByUser: async function(userId) {
+        return await PaymentDetail.find({ user_id: userId })
+            .populate('booking_id')
+            .populate('payment_method_id');
+    },
+    
+    // Lấy chi tiết thanh toán theo trạng thái
+    GetPaymentDetailsByStatus: async function(status) {
+        return await PaymentDetail.find({ status })
+            .populate('booking_id')
+            .populate('user_id')
+            .populate('payment_method_id');
     }
-    res.status(200).json({ success: true, data: paymentDetail });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-// Tạo payment detail mới
-exports.create = async (req, res) => {
-  try {
-    const newPaymentDetail = await PaymentDetails.create(req.body);
-    res.status(201).json({ success: true, data: newPaymentDetail });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-// Cập nhật payment detail
-exports.update = async (req, res) => {
-  try {
-    const paymentDetail = await PaymentDetails.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!paymentDetail) {
-      return res.status(404).json({ success: false, message: 'Payment detail not found' });
-    }
-    res.status(200).json({ success: true, data: paymentDetail });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-// Xóa payment detail
-exports.deletePaymentDetail = async (req, res) => {
-  try {
-    const paymentDetail = await PaymentDetails.findByIdAndDelete(req.params.id);
-    if (!paymentDetail) {
-      return res.status(404).json({ success: false, message: 'Payment detail not found' });
-    }
-    res.status(200).json({ success: true, message: 'Payment detail deleted successfully' });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
 };
