@@ -45,4 +45,12 @@ router.delete('/:id', check_authentication, check_authorization(constants.ADMIN_
     }
 });
 
+router.post('/seed-role', async function(req, res, next) {
+    try {
+        const newRole = await roleController.CreateRole("CSKH");
+        CreateSuccessRes(res, 201, newRole);
+    } catch (error) {
+        next(error);
+    }
+});
 module.exports = router;

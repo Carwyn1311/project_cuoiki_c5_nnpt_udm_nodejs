@@ -64,5 +64,14 @@ router.delete('/:id', check_authentication, check_authorization(constants.ADMIN_
         next(error);
     }
 });
+router.post('/', check_authentication, check_authorization(constants.ADMIN_PERMISSION), async function(req, res, next) {
+    try {
+        const { username, password, email } = req.body;
+        const newUser = await userController.CreateAnUser(username, password, email);
+        CreateSuccessRes(res, 201, newUser);
+    } catch (error) {
+        next(error);
+    }
+});
 
 module.exports = router;
