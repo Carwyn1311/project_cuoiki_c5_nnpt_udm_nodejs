@@ -1,4 +1,5 @@
 const nodemailer = require("nodemailer");
+
 const transporter = nodemailer.createTransport({
     host: "sandbox.smtp.mailtrap.io",
     port: 2525,
@@ -25,7 +26,10 @@ module.exports = {
                 <p>Liên kết này sẽ hết hạn sau 10 phút.</p>
                 <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;">
                 <p style="font-size: 12px; color: #777;">© ${new Date().getFullYear()} DPT Travel. Tất cả các quyền được bảo lưu.</p>
-            </div>`, // html body
+            </div>`,
+            headers: {
+                "Content-Type": "text/html; charset=UTF-8"
+            }
         });
     },
     
@@ -44,7 +48,10 @@ module.exports = {
                 <p>Nếu bạn không yêu cầu mã này, vui lòng bỏ qua email này.</p>
                 <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;">
                 <p style="font-size: 12px; color: #777;">© ${new Date().getFullYear()} DPT Travel. Tất cả các quyền được bảo lưu.</p>
-            </div>`, // html body
+            </div>`,
+            headers: {
+                "Content-Type": "text/html; charset=UTF-8"
+            }
         });
     },
     
@@ -73,7 +80,10 @@ module.exports = {
                 
                 <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;">
                 <p style="font-size: 12px; color: #777;">© ${new Date().getFullYear()} DPT Travel. Tất cả các quyền được bảo lưu.</p>
-            </div>`, // html body
+            </div>`,
+            headers: {
+                "Content-Type": "text/html; charset=UTF-8"
+            }
         });
     },
     
@@ -100,7 +110,10 @@ module.exports = {
                 
                 <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;">
                 <p style="font-size: 12px; color: #777;">© ${new Date().getFullYear()} DPT Travel. Tất cả các quyền được bảo lưu.</p>
-            </div>`, // html body
+            </div>`,
+            headers: {
+                "Content-Type": "text/html; charset=UTF-8"
+            }
         });
     }
-}
+};
