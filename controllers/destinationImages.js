@@ -16,7 +16,7 @@ module.exports = {
         return image;
     },
     
-    // Tạo hình ảnh mới
+    // Tạo hình ảnh mới (từ file upload)
     CreateDestinationImage: async function(imageUrl, destinationId) {
         // Kiểm tra điểm đến có tồn tại không
         const destination = await Destination.findById(destinationId);
@@ -32,6 +32,39 @@ module.exports = {
         await newImage.save();
         
         // Cập nhật mảng destination_images trong destination
+        if (!destination.destination_images) {
+            destination.destination_images = [];
+        }
+        destination.destination_images.push(newImage._id);
+        await destination.save();
+        
+        return newImage;
+    },
+    
+    // Tạo hình ảnh mới từ URL (hàm mới)
+    CreateDestinationImageFromUrl: async function(imageData) {
+        // Kiểm tra điểm đến có tồn tại không
+        const destination = await Destination.findById(imageData.destination_id);
+        if (!destination) {
+            throw new Error('Điểm đến không tồn tại');
+        }
+        
+        // Kiểm tra URL hình ảnh có hợp lệ không
+        if (!imageData.image_url || typeof imageData.image_url !== 'string') {
+            throw new Error('URL hình ảnh không hợp lệ');
+        }
+        
+        const newImage = new DestinationImage({
+            image_url: imageData.image_url,
+            destination_id: imageData.destination_id
+        });
+        
+        await newImage.save();
+        
+        // Cập nhật mảng destination_images trong destination
+        if (!destination.destination_images) {
+            destination.destination_images = [];
+        }
         destination.destination_images.push(newImage._id);
         await destination.save();
         

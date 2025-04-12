@@ -26,15 +26,19 @@ router.get('/:id', async function(req, res, next) {
 });
 
 // Tạo hình ảnh mới (chỉ Admin)
-router.post('/', check_authentication, check_authorization(constants.ADMIN_PERMISSION), async function(req, res, next) {
+router.post('/url/:destinationId', check_authentication, check_authorization(constants.ADMIN_PERMISSION), async function(req, res, next) {
     try {
-        const newImage = await destinationImageController.CreateDestinationImage(req.body.image_url, req.body.destination_id);
+        const imageData = {
+            image_url: req.body.image_url,
+            destination_id: req.params.destinationId
+        };
+        
+        const newImage = await destinationImageController.CreateDestinationImageFromUrl(imageData);
         CreateSuccessRes(res, 201, newImage);
     } catch (error) {
         next(error);
     }
 });
-
 // Cập nhật hình ảnh (chỉ Admin)
 router.put('/:id', check_authentication, check_authorization(constants.ADMIN_PERMISSION), async function(req, res, next) {
     try {

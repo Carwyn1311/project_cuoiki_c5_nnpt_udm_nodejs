@@ -20,9 +20,10 @@ const paymentDetailSchema = new Schema({
     ref: 'Booking',
     required: true
   },
-  payment_method_id: {
-    type: Schema.Types.ObjectId,
-    ref: 'PaymentMethod'
+  payment_method: {
+    type: String,
+    enum: ['credit_card', 'bank_transfer', 'cash', 'momo', 'zalopay'],
+    required: true
   },
   user_id: {
     type: Schema.Types.ObjectId,
