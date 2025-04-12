@@ -19,7 +19,7 @@ router.get('/', check_authentication, check_authorization(constants.ADMIN_PERMIS
 router.get('/:id', check_authentication, async function(req, res, next) {
     try {
         // Kiểm tra quyền: chỉ Admin hoặc chính người dùng đó mới có thể xem thông tin
-        if (req.user.roles.some(role => role.name === 'Admin') || req.user._id.toString() === req.params.id) {
+        if (req.user.roles.some(role => role.name === 'Admin' || role.name === 'CSKH') || req.user._id.toString() === req.params.id) {
             const user = await userController.GetUserById(req.params.id);
             CreateSuccessRes(res, 200, user);
         } else {
