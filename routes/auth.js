@@ -13,34 +13,34 @@ let mailer = require('../utils/mailer');
 // Login route
 router.post('/login', validationLogin, validate, async function (req, res, next) {
     try {
-        let { username, password } = req.body;
-        let result = await userController.Login(username, password);
-        
-        // Lấy mảng tên vai trò từ result.roles (đã được populate)
-        const roleNames = result.roles.map(role => role.name);
-        
-        // Tạo token với payload đầy đủ
-        let token = jwt.sign({
-            _id: result._id,
+    let { username, password } = req.body;
+    let result = await userController.Login(username, password);
+    
+    // Lấy mảng tên vai trò từ result.roles (đã được populate)
+    const roleNames = result.roles.map(role => role.name);
+    
+    // Tạo token với payload đầy đủ, sử dụng 'id' để tương thích với middleware
+    let token = jwt.sign({
+    id: result._id, // Sử dụng 'id' để tương thích với middleware
+    username: result.username,
+    email: result.email,
+    fullname: result.fullname,
+    roles: roleNames, // Sử dụng 'roles' thay vì 'role' để nhất quán
+    expire: new Date(Date.now() + 24 * 3600 * 1000)
+    }, constants.SECRET_KEY);
+    
+    CreateSuccessRes(res, 200, {
+        token,
+            user: {
+            id: result._id,
             username: result.username,
             email: result.email,
             fullname: result.fullname,
-            role: roleNames,
-            expire: new Date(Date.now() + 24 * 3600 * 1000)
-        }, constants.SECRET_KEY);
-        
-        CreateSuccessRes(res, 200, { 
-            token, 
-            user: { 
-                id: result._id,
-                username: result.username,
-                email: result.email,
-                fullname: result.fullname,
-                roles: roleNames
-            }
-        });
+            roles: roleNames
+        }
+    });
     } catch (error) {
-        next(error);
+    next(error);
     }
 });
 
