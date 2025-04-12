@@ -1,9 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const paymentDetailController = require('../controllers/paymentDetails');
-const { CreateSuccessRes } = require('../utils/ResHandler');
+const paymentDetailController = require('../controllers/paymentdetails');
+const { CreateSuccessRes, CreateErrorRes } = require('../utils/ResHandler');
 const { check_authentication, check_authorization } = require('../utils/check_auth');
 const constants = require('../utils/constants');
+const mailer = require('../utils/mailer');
+const Booking = require('../schemas/Bookings');
 
 // Lấy tất cả chi tiết thanh toán (Admin & CSKH)
 router.get('/', check_authentication, async (req, res, next) => {
@@ -91,20 +93,38 @@ router.put('/:id', check_authentication, async (req, res, next) => {
 
 // Cập nhật trạng thái thanh toán (Admin & CSKH)
 router.put('/:id/status', check_authentication, async (req, res, next) => {
-    try {
+  try {
       const userRoles = req.user.roles.map(role => role.name);
       if (userRoles.includes('Admin') || userRoles.includes('CSKH')) {
-        const updatedPaymentDetail = await paymentDetailController.UpdatePaymentDetail(req.params.id, {
-          status: req.body.status
-        });
-        CreateSuccessRes(res, 200, updatedPaymentDetail);
+          const updatedPaymentDetail = await paymentDetailController.UpdatePaymentDetail(req.params.id, {
+              status: req.body.status,
+              payment_date: req.body.status === 'completed' ? new Date() : undefined
+          });
+          
+          // Nếu trạng thái là "completed", gửi email xác nhận thanh toán
+          if (req.body.status === 'completed') {
+              const booking = await Booking.findById(updatedPaymentDetail.booking_id).populate('user_id');
+              if (!booking) {
+                  throw new Error('Đơn đặt tour không tồn tại');
+              }
+              await mailer.sendPaymentConfirmation(booking.user_id.email, {
+                  invoiceCode: updatedPaymentDetail._id.toString(),
+                  bookingId: updatedPaymentDetail.booking_id.toString(),
+                  paymentDate: updatedPaymentDetail.payment_date,
+                  amount: updatedPaymentDetail.amount,
+                  paymentMethod: updatedPaymentDetail.payment_method,
+                  status: updatedPaymentDetail.status
+              });
+          }
+          
+          CreateSuccessRes(res, 200, updatedPaymentDetail);
       } else {
-        throw new Error('Bạn không có quyền cập nhật trạng thái thanh toán');
+          throw new Error('Bạn không có quyền cập nhật trạng thái thanh toán');
       }
-    } catch (error) {
+  } catch (error) {
       next(error);
-    }
-  });
+  }
+});
   
 
 // Xóa chi tiết thanh toán (Chỉ Admin)

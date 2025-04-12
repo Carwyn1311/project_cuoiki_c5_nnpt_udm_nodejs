@@ -2,8 +2,9 @@ var express = require('express');
 var router = express.Router();
 var bookingController = require('../controllers/bookings');
 var { CreateSuccessRes, CreateErrorRes } = require('../utils/ResHandler');
-var { check_authentication, check_authorization } = require('../utils/check_auth');
-var constants = require('../utils/constants');
+var { check_authentication } = require('../utils/check_auth');
+var mailer = require('../utils/mailer');
+var Destination = require('../schemas/destinations');
 
 // Lấy danh sách tất cả đơn đặt vé (Admin và CSKH)
 router.get('/', check_authentication, async function(req, res, next) {
@@ -41,26 +42,53 @@ router.get('/:id', check_authentication, async function(req, res, next) {
 // Tạo đơn đặt vé mới
 router.post('/', check_authentication, async function(req, res, next) {
     try {
+        const { destination_id, adult_tickets, child_tickets, days } = req.body;
+        
+        // Kiểm tra điểm đến
+        const destination = await Destination.findById(destination_id);
+        if (!destination) {
+            throw new Error('Điểm đến không tồn tại');
+        }
+
         // Nếu là Admin hoặc CSKH, có thể đặt vé cho người khác
         const userRoles = req.user.roles.map(role => role.name);
+        let newBooking;
         if (userRoles.includes('Admin') || userRoles.includes('CSKH')) {
             // Sử dụng user_id từ request body nếu có
             const userId = req.body.user_id || req.user._id;
             const bookingData = {
-                ...req.body,
+                destination_id,
+                adult_tickets,
+                child_tickets,
+                days,
                 user_id: userId
             };
-            const newBooking = await bookingController.CreateBooking(bookingData);
-            CreateSuccessRes(res, 201, newBooking);
+            newBooking = await bookingController.CreateBooking(bookingData);
         } else {
             // Người dùng thường chỉ có thể đặt vé cho chính mình
             const bookingData = {
-                ...req.body,
+                destination_id,
+                adult_tickets,
+                child_tickets,
+                days,
                 user_id: req.user._id
             };
-            const newBooking = await bookingController.CreateBooking(bookingData);
-            CreateSuccessRes(res, 201, newBooking);
+            newBooking = await bookingController.CreateBooking(bookingData);
         }
+        
+        // Gửi email xác nhận đặt tour
+        await mailer.sendBookingConfirmation(req.user.email, {
+            id: newBooking._id.toString(),
+            destinationName: destination.name,
+            bookingDate: newBooking.createdAt,
+            adultTickets: newBooking.adult_tickets,
+            childTickets: newBooking.child_tickets,
+            days: newBooking.days,
+            totalAmount: (adult_tickets * 100000 + child_tickets * 50000), // Giả định giá vé
+            status: newBooking.status
+        });
+        
+        CreateSuccessRes(res, 201, newBooking);
     } catch (error) {
         next(error);
     }

@@ -118,10 +118,10 @@ router.post('/forgotpassword', async (req, res, next) => {
         
         const user = await userController.GetUserByEmail(email);
         
-        // Tạo mã xác minh và lưu trữ tạm thời
+        // Tạo mã xác minh và lưu trữ
         const verificationCode = crypto.randomBytes(3).toString('hex'); // Mã 6 ký tự
-        user.tokenResetPassword = verificationCode;
-        user.tokenResetPasswordExp = Date.now() + 10 * 60 * 1000;  // Mã hết hạn trong 10 phút
+        user.code = verificationCode; // Sử dụng trường code
+        user.expires_at = Date.now() + 10 * 60 * 1000; // Sử dụng trường expires_at
         await user.save();
 
         // Gửi mã xác minh qua email
@@ -142,12 +142,18 @@ router.post('/verify-code', async (req, res, next) => {
         }
         
         const user = await userController.GetUserByEmail(email);
-        if (!user || user.tokenResetPassword !== code || user.tokenResetPasswordExp < Date.now()) {
+        if (!user || user.code !== code || user.expires_at < Date.now()) {
             throw new Error("Mã xác minh không hợp lệ hoặc đã hết hạn");
         }
 
         // Token hợp lệ, tạo JWT token mới để reset mật khẩu
         const token = jwt.sign({ id: user._id }, constants.SECRET_KEY, { expiresIn: '1h' });
+        
+        // Xóa mã xác minh sau khi xác minh thành công
+        user.code = undefined;
+        user.expires_at = undefined;
+        await user.save();
+
         CreateSuccessRes(res, 200, { message: "Xác minh thành công", token });
     } catch (error) {
         next(error);
@@ -169,8 +175,8 @@ router.post('/resetpassword/:token', async (req, res, next) => {
         
         // Cập nhật mật khẩu người dùng
         user.password = newPassword; // Sẽ được hash trong pre-save hook
-        user.tokenResetPassword = undefined;
-        user.tokenResetPasswordExp = undefined;
+        user.code = undefined; // Đảm bảo xóa trường code
+        user.expires_at = undefined; // Đảm bảo xóa trường expires_at
         await user.save();
 
         CreateSuccessRes(res, 200, { message: "Đặt lại mật khẩu thành công" });
