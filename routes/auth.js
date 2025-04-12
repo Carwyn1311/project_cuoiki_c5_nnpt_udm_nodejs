@@ -15,17 +15,30 @@ router.post('/login', validationLogin, validate, async function (req, res, next)
     try {
         let { username, password } = req.body;
         let result = await userController.Login(username, password);
+        
+        // Lấy mảng tên vai trò từ result.roles (đã được populate)
+        const roleNames = result.roles.map(role => role.name);
+        
+        // Tạo token với payload đầy đủ
         let token = jwt.sign({
-            id: result._id,
-            expire: new Date(Date.now() + 24 * 3600 * 1000)
-        }, constants.SECRET_KEY);
-        CreateSuccessRes(res, 200, { token, user: { 
-            id: result._id,
+            _id: result._id,
             username: result.username,
             email: result.email,
             fullname: result.fullname,
-            roles: result.roles.map(role => role.name)
-        }});
+            role: roleNames,
+            expire: new Date(Date.now() + 24 * 3600 * 1000)
+        }, constants.SECRET_KEY);
+        
+        CreateSuccessRes(res, 200, { 
+            token, 
+            user: { 
+                id: result._id,
+                username: result.username,
+                email: result.email,
+                fullname: result.fullname,
+                roles: roleNames
+            }
+        });
     } catch (error) {
         next(error);
     }
@@ -46,18 +59,32 @@ router.post('/signup', validationSiginUp, validate, async function (req, res, ne
             await userController.UpdateUser(result._id, updateData);
         }
         
+        // Lấy lại user để có thông tin đầy đủ (bao gồm roles được populate)
+        let updatedUser = await userController.GetUserById(result._id);
+        // Lấy mảng tên roles, ví dụ: ["User"]
+        const roleNames = updatedUser.roles.map(role => role.name);
+        
+        // Tạo token với payload đầy đủ
         let token = jwt.sign({
-            id: result._id,
+            _id: updatedUser._id,
+            username: updatedUser.username,
+            email: updatedUser.email,
+            fullname: updatedUser.fullname || "",
+            role: roleNames,
             expire: new Date(Date.now() + 24 * 3600 * 1000)
         }, constants.SECRET_KEY);
         
-        CreateSuccessRes(res, 201, { token, user: { 
-            id: result._id,
-            username: result.username,
-            email: result.email,
-            fullname: result.fullname || '',
-            roles: ['User']
-        }});
+        // Trả về kết quả thành công với token và thông tin user trong định dạng JSON
+        CreateSuccessRes(res, 201, { 
+            token, 
+            user: { 
+                id: updatedUser._id,
+                username: updatedUser.username,
+                email: updatedUser.email,
+                fullname: updatedUser.fullname || '',
+                roles: roleNames
+            }
+        });
     } catch (error) {
         next(error);
     }
