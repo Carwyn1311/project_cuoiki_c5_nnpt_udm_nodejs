@@ -15,11 +15,15 @@ const destinationSchema = new Schema({
     image: {
         type: String
     },
-    adult_price: { // Thêm giá vé người lớn
+    adult_price: {
         type: Number,
         required: true
     },
-    child_price: { // Thêm giá vé trẻ em
+    child_price: {
+        type: Number,
+        required: true
+    },
+    days: { // Thêm trường days
         type: Number,
         required: true
     },

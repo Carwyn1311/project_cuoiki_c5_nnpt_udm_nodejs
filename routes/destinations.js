@@ -29,10 +29,10 @@ router.get('/:id', async function(req, res, next) {
 // Tạo điểm đến mới (chỉ Admin)
 router.post('/', check_authentication, check_authorization(constants.ADMIN_PERMISSION), async function(req, res, next) {
     try {
-        const { name, description, location, image, province_id, city_id, adult_price, child_price } = req.body;
+        const { name, description, location, image, province_id, city_id, adult_price, child_price, days } = req.body;
         
-        if (!name || !adult_price || !child_price) {
-            return CreateErrorRes(res, 400, new Error('Thiếu các trường bắt buộc: name, adult_price, child_price'));
+        if (!name || !adult_price || !child_price || !days) {
+            return CreateErrorRes(res, 400, new Error('Thiếu các trường bắt buộc: name, adult_price, child_price, days'));
         }
 
         const newDestination = await destinationController.CreateDestination({
@@ -43,7 +43,8 @@ router.post('/', check_authentication, check_authorization(constants.ADMIN_PERMI
             province_id,
             city_id,
             adult_price,
-            child_price
+            child_price,
+            days
         });
         CreateSuccessRes(res, 201, newDestination);
     } catch (error) {

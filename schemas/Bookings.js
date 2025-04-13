@@ -14,10 +14,6 @@ const bookingSchema = new Schema({
     type: Number,
     required: true
   },
-  days: {
-    type: Number,
-    required: true
-  },
   status: {
     type: String,
     enum: ['pending', 'confirmed', 'paid'],

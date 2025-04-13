@@ -35,7 +35,7 @@ module.exports = {
     
     // Tạo điểm đến mới
     CreateDestination: async function(destinationData) {
-        const { province_id, city_id, name, description, location, image, adult_price, child_price } = destinationData;
+        const { province_id, city_id, name, description, location, image, adult_price, child_price, days } = destinationData;
         
         // Kiểm tra tỉnh và thành phố có tồn tại không
         if (province_id) {
@@ -53,8 +53,8 @@ module.exports = {
         }
         
         // Kiểm tra các trường bắt buộc
-        if (!name || !adult_price || !child_price) {
-            throw new Error('Thiếu các trường bắt buộc: name, adult_price, child_price');
+        if (!name || !adult_price || !child_price || !days) {
+            throw new Error('Thiếu các trường bắt buộc: name, adult_price, child_price, days');
         }
 
         const newDestination = new Destination({
@@ -64,6 +64,7 @@ module.exports = {
             image,
             adult_price,
             child_price,
+            days, // Thêm days
             province_id,
             city_id
         });
@@ -86,6 +87,7 @@ module.exports = {
         if (destinationData.image) destination.image = destinationData.image;
         if (destinationData.adult_price) destination.adult_price = destinationData.adult_price;
         if (destinationData.child_price) destination.child_price = destinationData.child_price;
+        if (destinationData.days) destination.days = destinationData.days;
         
         if (destinationData.province_id && destinationData.province_id !== destination.province_id?.toString()) {
             await Province.findByIdAndUpdate(

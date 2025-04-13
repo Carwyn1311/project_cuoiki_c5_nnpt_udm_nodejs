@@ -36,7 +36,7 @@ router.get('/:id', check_authentication, async function(req, res, next) {
 // Tạo đơn đặt vé mới
 router.post('/', check_authentication, async function(req, res, next) {
     try {
-        const { destination_id, adult_tickets, child_tickets, days, user_id } = req.body;
+        const { destination_id, adult_tickets, child_tickets, user_id } = req.body;
         
         // Kiểm tra điểm đến
         const destination = await Destination.findById(destination_id);
@@ -56,7 +56,7 @@ router.post('/', check_authentication, async function(req, res, next) {
                 destination_id,
                 adult_tickets,
                 child_tickets,
-                days,
+                days: destination.days, // Lấy days từ Destination
                 user_id: userId
             };
             newBooking = await bookingController.CreateBooking(bookingData);
@@ -68,7 +68,7 @@ router.post('/', check_authentication, async function(req, res, next) {
                 destination_id,
                 adult_tickets,
                 child_tickets,
-                days,
+                days: destination.days, // Lấy days từ Destination
                 user_id: req.user._id
             };
             newBooking = await bookingController.CreateBooking(bookingData);
@@ -86,7 +86,6 @@ router.post('/', check_authentication, async function(req, res, next) {
             status: newBooking.status
         });
         
-        // Thêm totalAmount vào phản hồi JSON
         const responseData = {
             ...newBooking._doc,
             totalAmount: totalAmount
