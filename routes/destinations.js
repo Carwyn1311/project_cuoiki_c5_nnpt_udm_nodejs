@@ -4,6 +4,7 @@ var destinationController = require('../controllers/destinations');
 var { CreateSuccessRes, CreateErrorRes } = require('../utils/ResHandler');
 var { check_authentication, check_authorization } = require('../utils/check_auth');
 var constants = require('../utils/constants');
+const uploadController = require('../controllers/upload');
 
 // Lấy danh sách tất cả điểm đến (public)
 router.get('/', async function(req, res, next) {
@@ -28,7 +29,22 @@ router.get('/:id', async function(req, res, next) {
 // Tạo điểm đến mới (chỉ Admin)
 router.post('/', check_authentication, check_authorization(constants.ADMIN_PERMISSION), async function(req, res, next) {
     try {
-        const newDestination = await destinationController.CreateDestination(req.body);
+        const { name, description, location, image, province_id, city_id, adult_price, child_price } = req.body;
+        
+        if (!name || !adult_price || !child_price) {
+            return CreateErrorRes(res, 400, new Error('Thiếu các trường bắt buộc: name, adult_price, child_price'));
+        }
+
+        const newDestination = await destinationController.CreateDestination({
+            name,
+            description,
+            location,
+            image,
+            province_id,
+            city_id,
+            adult_price,
+            child_price
+        });
         CreateSuccessRes(res, 201, newDestination);
     } catch (error) {
         next(error);
@@ -56,14 +72,7 @@ router.delete('/:id', check_authentication, check_authorization(constants.ADMIN_
 });
 
 // Thêm hình ảnh cho điểm đến (chỉ Admin)
-router.post('/:id/images', check_authentication, check_authorization(constants.ADMIN_PERMISSION), async function(req, res, next) {
-    try {
-        const newImage = await destinationController.AddDestinationImage(req.params.id, req.body.image_url);
-        CreateSuccessRes(res, 201, newImage);
-    } catch (error) {
-        next(error);
-    }
-});
+router.post('/:id/images', check_authentication, check_authorization(constants.ADMIN_PERMISSION), uploadController.uploadImage, uploadController.handleImageUpload);
 
 // Lấy điểm đến theo tỉnh (public)
 router.get('/province/:provinceId', async function(req, res, next) {
@@ -85,7 +94,7 @@ router.get('/city/:cityId', async function(req, res, next) {
     }
 });
 
-// Tìm kiếm điểm đến theo tên (public)
+// Tìm kiếm điểm đến theo từ khóa (public)
 router.get('/search/:keyword', async function(req, res, next) {
     try {
         const destinations = await destinationController.SearchDestinations(req.params.keyword);

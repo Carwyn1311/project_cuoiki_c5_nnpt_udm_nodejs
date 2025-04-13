@@ -35,29 +35,37 @@ module.exports = {
     
     // Tạo điểm đến mới
     CreateDestination: async function(destinationData) {
+        const { province_id, city_id, name, description, location, image, adult_price, child_price } = destinationData;
+        
         // Kiểm tra tỉnh và thành phố có tồn tại không
-        if (destinationData.province_id) {
-            const province = await Province.findById(destinationData.province_id);
+        if (province_id) {
+            const province = await Province.findById(province_id);
             if (!province) {
                 throw new Error('Tỉnh không tồn tại');
             }
         }
         
-        if (destinationData.city_id) {
-            const city = await City.findById(destinationData.city_id);
+        if (city_id) {
+            const city = await City.findById(city_id);
             if (!city) {
                 throw new Error('Thành phố không tồn tại');
             }
         }
         
+        // Kiểm tra các trường bắt buộc
+        if (!name || !adult_price || !child_price) {
+            throw new Error('Thiếu các trường bắt buộc: name, adult_price, child_price');
+        }
+
         const newDestination = new Destination({
-            name: destinationData.name,
-            description: destinationData.description,
-            location: destinationData.location,
-            image: destinationData.image,
-            ticket_prices_id: destinationData.ticket_prices_id,
-            province_id: destinationData.province_id,
-            city_id: destinationData.city_id
+            name,
+            description,
+            location,
+            image,
+            adult_price,
+            child_price,
+            province_id,
+            city_id
         });
         
         await newDestination.save();
@@ -76,9 +84,24 @@ module.exports = {
         if (destinationData.description) destination.description = destinationData.description;
         if (destinationData.location) destination.location = destinationData.location;
         if (destinationData.image) destination.image = destinationData.image;
-        if (destinationData.ticket_prices_id) destination.ticket_prices_id = destinationData.ticket_prices_id;
-        if (destinationData.province_id) destination.province_id = destinationData.province_id;
-        if (destinationData.city_id) destination.city_id = destinationData.city_id;
+        if (destinationData.adult_price) destination.adult_price = destinationData.adult_price;
+        if (destinationData.child_price) destination.child_price = destinationData.child_price;
+        
+        if (destinationData.province_id && destinationData.province_id !== destination.province_id?.toString()) {
+            await Province.findByIdAndUpdate(
+                destination.province_id,
+                { $pull: { cities: id } }
+            );
+            await Province.findByIdAndUpdate(
+                destinationData.province_id,
+                { $push: { cities: id } }
+            );
+            destination.province_id = destinationData.province_id;
+        }
+        
+        if (destinationData.city_id && destinationData.city_id !== destination.city_id?.toString()) {
+            destination.city_id = destinationData.city_id;
+        }
         
         await destination.save();
         return destination;
@@ -154,7 +177,7 @@ module.exports = {
             .populate('destination_images');
     },
     
-    // Tìm kiếm điểm đến theo tên
+    // Tìm kiếm điểm đến theo từ khóa
     SearchDestinations: async function(keyword) {
         const regex = new RegExp(keyword, 'i');
         return await Destination.find({ name: { $regex: regex } })
