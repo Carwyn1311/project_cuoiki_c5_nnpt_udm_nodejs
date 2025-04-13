@@ -89,9 +89,9 @@ module.exports = {
     
     sendPaymentConfirmation: async function (to, paymentDetails) {
         return await transporter.sendMail({
-            from: `DPT Travel <noreply@dpttravel.com>`, // sender address
+            from: `Cherry Travel Travel <CherryTravel@Cheryytravel.com>`, // sender address
             to: to, // list of receivers
-            subject: "Xác nhận thanh toán - DPT Travel", // Subject line
+            subject: "Xác nhận thanh toán - Cherry Travel", // Subject line
             html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
                 <h2 style="color: #4a89dc;">Xác nhận thanh toán</h2>
                 <p>Cảm ơn bạn đã thanh toán cho đơn đặt tour. Dưới đây là chi tiết thanh toán của bạn:</p>
@@ -106,7 +106,7 @@ module.exports = {
                 </div>
                 
                 <p>Đơn đặt tour của bạn đã được xác nhận. Chúng tôi sẽ gửi thêm thông tin chi tiết về tour trước ngày khởi hành.</p>
-                <p>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi qua email support@dpttravel.com hoặc số điện thoại 1900-1234.</p>
+                <p>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi qua email support@CherryTravel.com hoặc số điện thoại 1900-1234.</p>
                 
                 <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;">
                 <p style="font-size: 12px; color: #777;">© ${new Date().getFullYear()} DPT Travel. Tất cả các quyền được bảo lưu.</p>
